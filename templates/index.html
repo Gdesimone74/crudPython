@@ -24,6 +24,13 @@
             </li>
         {% endfor %}
     </ul>
+
+    <h1>Upload CSV File</h1>
+    
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="csv_file" accept=".csv">
+        <button type="submit">Upload</button>
+    </form>
     
     <script>
         function createTask() {

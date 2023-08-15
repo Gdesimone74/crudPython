@@ -3,8 +3,10 @@ from task import Task
 
 from typing import List
 
-from fastapi import FastAPI, HTTPException, Request
-import redis, json
+from fastapi import FastAPI, File ,HTTPException, Request, UploadFile
+from fastapi.responses import RedirectResponse
+import redis, json, io
+import pandas as pd
 
 listTask=[]
 
@@ -71,3 +73,22 @@ def delete_task(title: str):
     else:
         raise HTTPException(status_code=404, detail="Task not found")
 
+
+@app.post("/upload")
+async def upload_csv(csv_file: UploadFile = File(...)):
+    if csv_file.filename.endswith(".csv"):
+      
+        csv_content = await csv_file.read()
+        df = pd.read_csv(io.BytesIO(csv_content))
+        
+       
+        for index, row in df.iterrows():
+            title = row["title"]
+            description = row["description"]
+            task_dict = {"title": title, "description": description}
+            r.rpush("tasks", json.dumps(task_dict))
+        
+       
+        return RedirectResponse("/", status_code=302)
+    else:
+        return {"message": "Invalid file format"}
