@@ -68,7 +68,7 @@ def delete_task(title: str):
 
     if index_to_delete is not None:
         print(index_to_delete)
-        r.lrem("tasks", index_to_delete, 1)  # Eliminar el elemento en el índice
+        r.lrem("tasks", index_to_delete, 1) 
         return {"message": "Task deleted"}
     else:
         raise HTTPException(status_code=404, detail="Task not found")
