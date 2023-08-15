@@ -48,7 +48,7 @@ def delete_task(title: str):
     tasks_after = r.lrange("tasks", 0, -1)
     
     if tasks_before == tasks_after:
-        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+        raise HTTPException(status_code=404, detail="Task not exist")
     
     return "Task deleted"
 
@@ -59,13 +59,13 @@ def get_description(title: str):
     task_json = r.hget("tasks_by_title", title)
 
     if task_json is None:
-        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+        raise HTTPException(status_code=404, detail="Task not exist")
 
     task_data = json.loads(task_json)
     task_instance = Task(**task_data) 
     
     if not task_json:
-        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+        raise HTTPException(status_code=404, detail="Task not exist")
     
     return task_instance.description
 
