@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Task Manager</title>
+</head>
+<body>
+    <h1>Task Manager</h1>
+    
+    <form id="taskForm">
+        <label for="title">Title:</label>
+        <input type="text" name="title"><br>
+        <label for="description">Description:</label>
+        <input type="text" name="description"><br>
+        <button type="button" onclick="createTask()">Create Task</button>
+    </form>
+    
+    <h2>Tasks:</h2>
+    <ul>
+        {% for task in tasks %}
+            <li>
+                <strong>Title:</strong> {{ task.title }}<br>
+                <strong>Description:</strong> {{ task.description }}
+                <button type="button" onclick="deleteTask('{{ task.title }}')">Delete</button>
+            </li>
+        {% endfor %}
+    </ul>
+    
+    <script>
+        function createTask() {
+            var title = document.querySelector('input[name="title"]').value;
+            var description = document.querySelector('input[name="description"]').value;
+            
+            var data = {
+                "title": title,
+                "description": description
+            };
+            
+            fetch("/create", {
+                method: "POST",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+                location.reload(); // Actualizar la página después de crear la tarea
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function deleteTask(title) {
+            fetch(`/delete/${title}`, {
+                method: "DELETE"
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+                location.reload(); // Actualizar la página después de eliminar la tarea
+            })
+            .catch(error => console.error("Error:", error));
+        }
+    </script>
+</body>
+</html>

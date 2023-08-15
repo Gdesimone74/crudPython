@@ -1,11 +1,9 @@
-from typing import Union
-
-from fastapi import FastAPI, HTTPException
-
+from fastapi.templating import Jinja2Templates
 from task import Task
 
 from typing import List
 
+from fastapi import FastAPI, HTTPException, Request
 import redis, json
 
 listTask=[]
@@ -13,7 +11,7 @@ listTask=[]
 app = FastAPI()
 
 r = redis.Redis(host='localhost', port=6379, decode_responses=True)
-
+templates = Jinja2Templates(directory="templates")
 
 @app.get("/testBD")
 async def test_redis_connection():
@@ -24,6 +22,18 @@ async def test_redis_connection():
     else:
             result="Error conection"
     return result
+
+@app.get("/")
+async def read_root(request: Request):
+    tasks = r.lrange("tasks", 0, -1)
+    tasks_list = []
+
+    for task_json in tasks:
+        task_data = json.loads(task_json)
+        tasks_list.append(task_data)
+
+    return templates.TemplateResponse("index.html", {"request": request, "tasks": tasks_list})
+
 
 @app.get("/list")
 def list_task():
@@ -36,36 +46,28 @@ def list_task():
 
 @app.post("/create")
 def create_task(task: Task):
-    listTask.append(task)
-    r.rpush("tasks", task.model_dump_json())
-    return listTask
+    task_dict = {"title": task.title, "description": task.description}
+    r.rpush("tasks", json.dumps(task_dict))
+    return r.lrange("tasks", 0, -1)
 
 @app.delete("/delete/{title}")
 def delete_task(title: str):
-    # Eliminar la tarea de Redis
-    tasks_before = r.lrange("tasks", 0, -1)
-    r.lrem("tasks", 0, title)
-    tasks_after = r.lrange("tasks", 0, -1)
-    
-    if tasks_before == tasks_after:
-        raise HTTPException(status_code=404, detail="Task not exist")
-    
-    return "Task deleted"
-
-@app.get("/description/{title}")
-def get_description(title: str):
-    # Obtener la tarea por título desde el índice hash
+    r.lrem("tasks", 0, 1)
     print(title)
-    task_json = r.hget("tasks_by_title", title)
+    tasks = r.lrange("tasks", 0, -1)
+    print(tasks)
+    index_to_delete = None
+    for index, task_json in enumerate(tasks):
+        task_dict = json.loads(task_json)
+        if task_dict.get("title") == title:
+            print('lo encontro')
+            index_to_delete = index
+            break
 
-    if task_json is None:
-        raise HTTPException(status_code=404, detail="Task not exist")
-
-    task_data = json.loads(task_json)
-    task_instance = Task(**task_data) 
-    
-    if not task_json:
-        raise HTTPException(status_code=404, detail="Task not exist")
-    
-    return task_instance.description
+    if index_to_delete is not None:
+        print(index_to_delete)
+        r.lrem("tasks", index_to_delete, 1)  # Eliminar el elemento en el índice
+        return {"message": "Task deleted"}
+    else:
+        raise HTTPException(status_code=404, detail="Task not found")
 
